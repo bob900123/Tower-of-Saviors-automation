@@ -1,5 +1,7 @@
+import os
 import uuid
 import json
+import time
 
 import flet as ft
 
@@ -7,6 +9,7 @@ from .points import table_data
 from utils.workflow import run_workflow
 
 items = []
+num = 0
 
 def LoopPage(page: ft.Page):
     selected_control = dict()
@@ -18,13 +21,17 @@ def LoopPage(page: ft.Page):
         for i in items:
             if i["uuid"] == selected_control["uuid"]:
                 if selected_control["idx"] == "0":
-                    i["file1"] = e.files[0].name
+                    dir_path, file_name = os.path.split(e.files[0].path)
+                    i["file1"] = file_name
+                    i["dir1"] = dir_path
                 elif selected_control["idx"] == "1":
-                    i["file2"] = e.files[0].name
+                    dir_path, file_name = os.path.split(e.files[0].path)
+                    i["file2"] = file_name
+                    i["dir2"] = dir_path
 
     def pick_file_result2(e: ft.ControlEvent):
         global items
-        file_name = e.files[0].name
+        file_name = e.files[0].path
         if file_name:
             with open(file_name, "r") as f:
                 workflow = json.load(f)["workflow"]
@@ -129,7 +136,7 @@ def LoopPage(page: ft.Page):
             elif item["type"] == "similar":
                 file_col = ft.Column([
                         ft.TextButton(item.get("file1") if item.get("file1") else "選擇檔案", on_click=pick_file, data=item["uuid"] + ",0"), 
-                        ft.TextButton(item.get("file2") if item.get("file2") else "選擇檔案", on_click=pick_file, data=item["uuid"] + ",0"), 
+                        ft.TextButton(item.get("file2") if item.get("file2") else "選擇檔案", on_click=pick_file, data=item["uuid"] + ",1"), 
                     ], 
                     horizontal_alignment=ft.CrossAxisAlignment.CENTER
                 )
@@ -138,7 +145,7 @@ def LoopPage(page: ft.Page):
                     title= c, 
                     leading=ft.Icon(ft.Icons.FIBER_SMART_RECORD_OUTLINED),
                     data=item["uuid"],
-                    on_long_press=remove_item
+                    on_long_press=remove_item,
                 )
             elif item["type"] == "template":
                 file_col = ft.Column([
@@ -176,7 +183,6 @@ def LoopPage(page: ft.Page):
     # 初始構建
     lv = build_lv()
 
-
     save_bar = ft.SnackBar(
         content=ft.Text("儲存成功"),
         action="ok",
@@ -186,12 +192,33 @@ def LoopPage(page: ft.Page):
         action="od"
     )
 
+    three_bar = ft.SnackBar(
+        content=ft.Text(f"3 秒後開始執行"),
+        action="ok",
+    )
+
+    two_bar = ft.SnackBar(
+        content=ft.Text(f"2 秒後開始執行"),
+        action="ok",
+    )
+
+    one_bar = ft.SnackBar(
+        content=ft.Text(f"1 秒後開始執行"),
+        action="ok",
+    )
+
     def save_workflow(e: ft.ControlEvent):
         with open("workflow.json", "w") as f:
             json.dump({"workflow": items}, f)
         page.open(save_bar)
     
     def invoke_workflow(e: ft.ControlEvent):
+        sleep_time = 3
+        bar_list = [one_bar, two_bar, three_bar]
+        for t in range(sleep_time, 0, -1):
+            page.open(bar_list[t-1])
+            page.update()
+            time.sleep(1)
         for i in items:
             if i["type"] == "click" or i["type"] == "doubleclick":
                 x, y = point_map[i["value"]].split(",")
@@ -206,8 +233,11 @@ def LoopPage(page: ft.Page):
                     ft.Text("腳本", color="gray", size=20, weight=ft.FontWeight.BOLD), 
                     lv 
                 ], 
-                expand=3, 
-                horizontal_alignment=ft.CrossAxisAlignment.CENTER
+                horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                alignment=ft.MainAxisAlignment.START,  
+                spacing=10,
+                scroll="HIDDEN",
+                width=260,
             ),
             ft.Column(
                 controls=[ 
@@ -223,16 +253,20 @@ def LoopPage(page: ft.Page):
                     ft.ElevatedButton("執行", ft.Icons.PLAY_ARROW_OUTLINED, bgcolor="#cc91bd", on_click=invoke_workflow),
                 ],
                 horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                expand=1,
+                width=100,
                 alignment=ft.MainAxisAlignment.START,
                 spacing=20
             ),
             pick_files_dialog,
             pick_files_dialog2,
             save_bar,
-            upload_bar
+            upload_bar,
+            
+            three_bar,
+            two_bar,
+            one_bar
         ],
         expand=True,
-        vertical_alignment=ft.CrossAxisAlignment.CENTER,
+        vertical_alignment=ft.CrossAxisAlignment.START,
     )
     return row

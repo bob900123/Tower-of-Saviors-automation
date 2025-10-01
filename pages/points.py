@@ -1,7 +1,7 @@
 import flet as ft
+import json
 
-table_data = [
-]
+table_data = []
 
 def PointsPage(page: ft.Page):
     table = ft.DataTable(
@@ -13,6 +13,36 @@ def PointsPage(page: ft.Page):
         ],
         width=350,
     )
+
+    save_bar = ft.SnackBar(
+        content=ft.Text("儲存成功"),
+        action="ok",
+    )
+
+    def pick_file_result(e: ft.ControlEvent):
+        global table_data
+        file_name = e.files[0].name
+        if file_name:
+            with open(file_name, "r") as f:
+                points = json.load(f)["points"]
+                data = [[p["name"], int(p["x"]), int(p["y"])] for p in points]
+                table_data.extend(data)
+                rebuild_table()
+                table.update()
+
+    pick_files_dialog = ft.FilePicker(on_result=pick_file_result)
+
+    def pick_file(e: ft.ControlEvent):
+        pick_files_dialog.pick_files(allow_multiple=False, initial_directory=".")
+
+
+    def save_points(e):
+        data = dict()
+        data["points"] = [{"name": name, "x": x, "y": y} for name, x, y in table_data]
+
+        with open("points.json", "w") as f:
+            json.dump(data, f)
+        page.open(save_bar)
 
     def rebuild_table():
         table.rows.clear()
@@ -61,11 +91,21 @@ def PointsPage(page: ft.Page):
                 content= ft.Text("按 w 鍵儲存位置", color="gray", size=20, weight=ft.FontWeight.BOLD),
                 margin= 10
             ),
+            ft.Row(
+                controls=[
+                    ft.ElevatedButton("匯入", ft.Icons.FILE_UPLOAD_OUTLINED, bgcolor="#ffffff", on_click=pick_file),
+                    ft.ElevatedButton("匯出", ft.Icons.SAVE_ALT_OUTLINED, bgcolor="#ffb6ed", on_click=save_points),
+                ],
+                alignment=ft.MainAxisAlignment.CENTER,
+
+            ),
             ft.Column(
                 controls=[table],
                 height=550,
-                scroll="ALWAYS"
+                width=400,
+                scroll="HIDDEN",
             ),
+            pick_files_dialog,
         ],
         expand=True,
         horizontal_alignment=ft.CrossAxisAlignment.CENTER,

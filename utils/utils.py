@@ -15,6 +15,7 @@ def wait(second: float, message: str = "等待中"):
     if ms > 0:
         if message is not None:
             print(f"\r{message}... {second}/{second}" + " " * 10, end="")
+        time.sleep(ms)
     print("")
 
 def is_image_similar(img1: np.ndarray, img2: np.ndarray):
