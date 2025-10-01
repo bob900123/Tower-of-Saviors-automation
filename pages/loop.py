@@ -9,10 +9,15 @@ from .points import table_data
 from utils.workflow import run_workflow
 
 items = []
-num = 0
+control_map = {}
+stop_event = None
+start = False
 
 def LoopPage(page: ft.Page):
     selected_control = dict()
+    sleep_num = 3
+    show_text = ft.Text("", size=15, weight=ft.FontWeight.W_600, color=ft.Colors.GREY_500)
+    control_map["show_text"] = show_text
 
     def pick_file_result(e: ft.ControlEvent):
         nonlocal selected_control
@@ -62,6 +67,7 @@ def LoopPage(page: ft.Page):
             refresh()
         controls = []
         point_map = {name: f"{x},{y}" for name, x, y in table_data}
+        
         ft.TextField(label="", border_width=1, width=80, height=30, text_size=12),
         for idx, item in enumerate(items):
             if item["type"] == "click":
@@ -162,6 +168,7 @@ def LoopPage(page: ft.Page):
                     on_long_press=remove_item
                 )
             controls.append(listtile)
+            control_map[item["uuid"]] = listtile
         return ft.ReorderableListView(
             controls=controls,
             on_reorder=on_reorder
@@ -192,19 +199,9 @@ def LoopPage(page: ft.Page):
         action="od"
     )
 
-    three_bar = ft.SnackBar(
-        content=ft.Text(f"3 秒後開始執行"),
-        action="ok",
-    )
-
-    two_bar = ft.SnackBar(
-        content=ft.Text(f"2 秒後開始執行"),
-        action="ok",
-    )
-
-    one_bar = ft.SnackBar(
-        content=ft.Text(f"1 秒後開始執行"),
-        action="ok",
+    sleep_bar = ft.SnackBar(
+        content=ft.Text(f"{sleep_num} 秒後開始執行"),
+        duration=1000
     )
 
     def save_workflow(e: ft.ControlEvent):
@@ -213,10 +210,34 @@ def LoopPage(page: ft.Page):
         page.open(save_bar)
     
     def invoke_workflow(e: ft.ControlEvent):
+        global stop_event, start
+        if start:
+            stop_event.set()
+            start = False
+            e.control.text = "執行"
+            e.control.bgcolor = "#cc91bd"
+            e.control.icon = ft.Icons.PLAY_ARROW_OUTLINED
+            e.control.update()
+            for control in control_map.values():
+                control.bgcolor = "#f8f9ff"
+                control.update()
+            return
+        
+        start = True
+        e.control.text = "停止"
+        e.control.icon = ft.Icons.STOP_OUTLINED
+        e.control.bgcolor = "#ff6f91"   
+        e.control.update()
+
         sleep_time = 3
-        bar_list = [one_bar, two_bar, three_bar]
+
         for t in range(sleep_time, 0, -1):
-            page.open(bar_list[t-1])
+            nonlocal sleep_num
+            sleep_num = t
+            sleep_bar.content.value = f"{sleep_num} 秒後開始執行" 
+            sleep_bar.update() 
+            page.update()
+            page.open(sleep_bar)
             page.update()
             time.sleep(1)
         for i in items:
@@ -224,7 +245,9 @@ def LoopPage(page: ft.Page):
                 x, y = point_map[i["value"]].split(",")
                 i["x"] = x
                 i["y"] = y
-        run_workflow(items, point_map)
+        stop_event = run_workflow(items, point_map, control_map)
+
+    
 
     row = ft.Row(
         controls=[
@@ -251,6 +274,10 @@ def LoopPage(page: ft.Page):
                     ft.ElevatedButton("匯出", ft.Icons.SAVE_ALT_OUTLINED, bgcolor="#ffb6ed", on_click=save_workflow),
                     ft.Divider(thickness=1),
                     ft.ElevatedButton("執行", ft.Icons.PLAY_ARROW_OUTLINED, bgcolor="#cc91bd", on_click=invoke_workflow),
+                    ft.Container(
+                        content= show_text,
+                        margin= ft.Margin(top=80, left=0, right=0, bottom=0)
+                    )
                 ],
                 horizontal_alignment=ft.CrossAxisAlignment.CENTER,
                 width=100,
@@ -261,10 +288,7 @@ def LoopPage(page: ft.Page):
             pick_files_dialog2,
             save_bar,
             upload_bar,
-            
-            three_bar,
-            two_bar,
-            one_bar
+            sleep_bar,
         ],
         expand=True,
         vertical_alignment=ft.CrossAxisAlignment.START,

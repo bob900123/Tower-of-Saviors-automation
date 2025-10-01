@@ -1,20 +1,36 @@
 import time
+import math
 import numpy as np
 import cv2
 import pyautogui
+import flet as ft
+import threading
 
-def wait(second: float, message: str = "等待中"):
+def wait(second: float, stop_event: threading.Event = None, control: ft.Control = None, message: str = "等待中"):
     s = int(second)
     ms = second - s
 
     for i in range(s):
+        if stop_event is not None and stop_event.is_set():
+            if message is not None:
+                print("\r等待中... 已停止" + " " * 10)
+            if control is not None:
+                control.value = f""
+                control.update()
+            return
         if message is not None:
             print(f"\r{message}... {i+1}/{second}" + " " * 10, end="")
+        if control is not None:
+            control.value = f"等待中...\n{round(float(i+1), 2)}/{round(float(second), 2)}"
+            control.update()
         time.sleep(1)
 
     if ms > 0:
         if message is not None:
             print(f"\r{message}... {second}/{second}" + " " * 10, end="")
+        if control is not None:
+            control.value = f"等待中...\n{round(float(second), 2)}/{round(float(second), 2)}"
+            control.update()
         time.sleep(ms)
     print("")
 
