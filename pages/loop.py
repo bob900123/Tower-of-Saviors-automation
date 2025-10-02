@@ -12,6 +12,19 @@ items = []
 control_map = {}
 stop_event = None
 start = False
+pastel_rainbow = [
+    ft.Colors.ORANGE_100, 
+    ft.Colors.YELLOW_100, 
+    ft.Colors.GREEN_100, 
+    ft.Colors.BLUE_100, 
+    ft.Colors.CYAN_100, 
+    ft.Colors.PURPLE_100,
+    ft.Colors.CYAN_ACCENT_100,
+    ft.Colors.LIGHT_GREEN_100,
+    ft.Colors.BROWN_100,
+]
+pastel_index = 0
+parent_color = {None: None}
 
 def LoopPage(page: ft.Page):
     selected_control = dict()
@@ -21,7 +34,8 @@ def LoopPage(page: ft.Page):
 
     def pick_file_result(e: ft.ControlEvent):
         nonlocal selected_control
-        selected_control["element"].text = e.files[0].name
+        if not e.files: return
+        selected_control["element"].text = e.files[0].name 
         selected_control["element"].update()
         for i in items:
             if i["uuid"] == selected_control["uuid"]:
@@ -35,11 +49,16 @@ def LoopPage(page: ft.Page):
                     i["dir2"] = dir_path
 
     def pick_file_result2(e: ft.ControlEvent):
-        global items
+        global items, pastel_index
+        if not e.files: return
         file_name = e.files[0].path
         if file_name:
             with open(file_name, "r") as f:
                 workflow = json.load(f)["workflow"]
+                for work in workflow:
+                    if work["type"] in ["similar", "template"]:
+                        parent_color[work["uuid"]] = pastel_rainbow[pastel_index]
+                        pastel_index = (pastel_index + 1) % len(pastel_rainbow)
                 items = workflow
                 refresh()
 
@@ -55,6 +74,31 @@ def LoopPage(page: ft.Page):
     pick_files_dialog = ft.FilePicker(on_result=pick_file_result)
     pick_files_dialog2 = ft.FilePicker(on_result=pick_file_result2)
     point_map = dict()
+
+    def update_parent(e: ft.ControlEvent):
+        item_uuids = [item["uuid"] for item in items]
+        idx = item_uuids.index(e.control.data)
+        
+        if idx == 0:
+            return
+        
+        parent_uuid = items[idx-1]["parent"]
+        self_parent_uuid = items[idx]["parent"]
+
+        if self_parent_uuid is not None:
+            parent_uuid = None
+
+            for i in range(idx+1, len(items)):
+                if items[i]["parent"] == self_parent_uuid:
+                    items[i]["parent"] = None
+                    control_map[items[i]["uuid"]].bgcolor = None
+                    control_map[items[i]["uuid"]].update()
+                else:
+                    break
+
+        items[idx]["parent"] = parent_uuid
+        e.control.bgcolor = parent_color.get(parent_uuid)
+        e.control.update()
 
     def build_lv():
         nonlocal point_map
@@ -91,7 +135,10 @@ def LoopPage(page: ft.Page):
                     title= c, 
                     leading=ft.Icon(ft.Icons.DONE_OUTLINED),
                     data=item["uuid"],
-                    on_long_press=remove_item
+                    on_long_press=remove_item,
+                    on_click=update_parent,
+                    bgcolor=parent_color.get(item.get("parent")),
+                    key=item["uuid"]
                 )
             elif item["type"] == "doubleclick":
                 def change_value(e: ft.ControlEvent):
@@ -114,7 +161,10 @@ def LoopPage(page: ft.Page):
                     title= c, 
                     leading=ft.Icon(ft.Icons.DONE_OUTLINED),
                     data=item["uuid"],
-                    on_long_press=remove_item
+                    on_long_press=remove_item,
+                    on_click=update_parent,
+                    bgcolor=parent_color.get(item.get("parent")),
+                    key=item["uuid"]
                 )
             elif item["type"] == "delay":
                 def change_value(e: ft.ControlEvent):
@@ -137,7 +187,10 @@ def LoopPage(page: ft.Page):
                     title= c, 
                     leading=ft.Icon(ft.Icons.BROWSE_GALLERY_OUTLINED), 
                     data=item["uuid"],
-                    on_long_press=remove_item
+                    on_long_press=remove_item,
+                    on_click=update_parent,
+                    bgcolor=parent_color.get(item.get("parent")),
+                    key=item["uuid"]
                 )
             elif item["type"] == "similar":
                 file_col = ft.Column([
@@ -152,6 +205,8 @@ def LoopPage(page: ft.Page):
                     leading=ft.Icon(ft.Icons.FIBER_SMART_RECORD_OUTLINED),
                     data=item["uuid"],
                     on_long_press=remove_item,
+                    bgcolor=parent_color.get(item.get("parent")),
+                    key=item["uuid"]
                 )
             elif item["type"] == "template":
                 file_col = ft.Column([
@@ -165,7 +220,9 @@ def LoopPage(page: ft.Page):
                     title= c, 
                     leading=ft.Icon(ft.Icons.FIND_IN_PAGE_OUTLINED),
                     data=item["uuid"],
-                    on_long_press=remove_item
+                    on_long_press=remove_item,
+                    bgcolor=parent_color.get(item.get("parent")),
+                    key=item["uuid"]
                 )
             controls.append(listtile)
             control_map[item["uuid"]] = listtile
@@ -175,12 +232,20 @@ def LoopPage(page: ft.Page):
         )
 
     def on_reorder(e: ft.OnReorderEvent):
-        items.insert(e.new_index, items.pop(e.old_index))
+        item = items.pop(e.old_index)
+        items.insert(e.new_index, item)
         refresh()
 
-
     def button_clicked(e: ft.ControlEvent):
-        items.append({"type": e.control.data, "uuid": str(uuid.uuid4())})
+        global pastel_index
+
+        uuid_str = str(uuid.uuid4())
+        parent = None
+        if e.control.data == "similar" or e.control.data == "template":
+            pastel_index = (pastel_index + 1) % len(pastel_rainbow)
+            parent_color[uuid_str] = pastel_rainbow[pastel_index]
+            parent = uuid_str
+        items.append({"type": e.control.data, "uuid": uuid_str, "parent": parent})
         refresh()
 
     def refresh():  
@@ -218,9 +283,11 @@ def LoopPage(page: ft.Page):
             e.control.bgcolor = "#cc91bd"
             e.control.icon = ft.Icons.PLAY_ARROW_OUTLINED
             e.control.update()
-            for control in control_map.values():
-                control.bgcolor = "#f8f9ff"
-                control.update()
+            for item in items:
+                control = control_map.get(item["uuid"])
+                if control:
+                    control.bgcolor = parent_color.get(item.get("parent"))
+                    control.update()
             return
         
         start = True
@@ -245,9 +312,7 @@ def LoopPage(page: ft.Page):
                 x, y = point_map[i["value"]].split(",")
                 i["x"] = x
                 i["y"] = y
-        stop_event = run_workflow(items, point_map, control_map)
-
-    
+        stop_event = run_workflow(items, control_map)
 
     row = ft.Row(
         controls=[

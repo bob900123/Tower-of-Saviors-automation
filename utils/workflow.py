@@ -5,6 +5,7 @@ import threading
 from .utils import wait, is_image_similar, is_template_in_image
 import pyautogui
 import cv2
+import flet as ft
 
 '''
 points = {
@@ -13,49 +14,28 @@ points = {
     ...
 }
 '''
-# 需要修改
-def similar_function(is_similar: bool, points: dict):
-    print("相似度檢測結果:", is_similar)
-    print(points)
-    if is_similar:
-        x, y = points.get("energy").split(",")
-        pyautogui.moveTo(int(x), int(y), duration=0.1)
-        pyautogui.click()
-        wait(0.8)
-        x, y = points.get("energy_ok").split(",")
-        pyautogui.moveTo(int(x), int(y), duration=0.1)
-        pyautogui.click()
-        wait(2)
-        x, y = points.get("energy_click").split(",")
-        pyautogui.moveTo(int(x), int(y), duration=0.1)
-        pyautogui.click()
-        wait(1)
-        x, y = points.get("prepare").split(",")
-        pyautogui.moveTo(int(x), int(y), duration=0.1)
-        pyautogui.click()
-        wait(1)
-    else:
-        pass
 
-# 需要修改
-def template_function(is_in:bool, points: dict):
-    if is_in:
-        pass
-    else:
-        pass
-
-def run_workflow(data: list, points: dict, controls: dict):
+def run_workflow(data: list, controls: dict) -> threading.Event:
     def worker(stop_event: threading.Event = threading.Event()):
+        parent_condition = {}
+
         while not stop_event.is_set():
             for action in data:
                 if stop_event.is_set():
                     break
                 uid = action["uuid"]
                 tile = controls.get(uid)
+                tile_bgcolor = tile.bgcolor
                 if tile:
-                    tile.bgcolor = "#fff176" 
+                    tile.bgcolor = ft.Colors.PINK_100
                     tile.update()
 
+                if not parent_condition.get(action["parent"], True):
+                    if tile:
+                        tile.bgcolor = tile_bgcolor
+                        tile.update()
+                    continue
+                
                 t = action["type"]
                 if t == "click":
                     x, y = int(action["x"]), int(action["y"])
@@ -74,15 +54,15 @@ def run_workflow(data: list, points: dict, controls: dict):
                     img1 = cv2.imread(os.path.join(action["dir1"], action["file1"]))
                     img2 = cv2.imread(os.path.join(action["dir2"], action["file2"]))
                     result = is_image_similar(img1, img2)
-                    similar_function(result, points)
+                    parent_condition[uid] = result
                 elif t == "template":
                     template = cv2.imread(os.path.join(action["dir1"], action["file1"]))
                     img = cv2.imread(os.path.join(action["dir2"], action["file2"]))
                     result = is_template_in_image(img, template)
-                    template_function(result, points)
+                    parent_condition[uid] = result
 
                 if tile:
-                    tile.bgcolor = "#f8f9ff"
+                    tile.bgcolor = tile_bgcolor
                     tile.update()
         print("工作流程已停止")
 
