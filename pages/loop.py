@@ -226,10 +226,13 @@ def LoopPage(page: ft.Page):
                 )
             controls.append(listtile)
             control_map[item["uuid"]] = listtile
-        return ft.ReorderableListView(
+        list_view = ft.ReorderableListView(
             controls=controls,
-            on_reorder=on_reorder
+            on_reorder=on_reorder,
+            key="reorderable-list"
         )
+        control_map["_list_view"] = list_view
+        return list_view
 
     def on_reorder(e: ft.OnReorderEvent):
         item = items.pop(e.old_index)
@@ -312,7 +315,7 @@ def LoopPage(page: ft.Page):
                 x, y = point_map[i["value"]].split(",")
                 i["x"] = x
                 i["y"] = y
-        stop_event = run_workflow(items, control_map)
+        stop_event = run_workflow(items, control_map, page, lv)
 
     row = ft.Row(
         controls=[

@@ -15,8 +15,22 @@ points = {
 }
 '''
 
-def run_workflow(data: list, controls: dict) -> threading.Event:
-    def worker(stop_event: threading.Event = threading.Event()):
+def run_workflow(data: list, controls: dict, page: ft.Page, lv: ft.ListView) -> threading.Event:
+    stop_event = threading.Event()
+    current_lv = lv
+
+    def get_active_list_view():
+        nonlocal current_lv
+        candidate = current_lv
+        if candidate is not None and getattr(candidate, "page", None):
+            return candidate
+        candidate = controls.get("_list_view")
+        if candidate is not None and getattr(candidate, "page", None):
+            current_lv = candidate
+            return candidate
+        return None
+
+    def worker():
         parent_condition = {}
 
         while not stop_event.is_set():
@@ -25,8 +39,11 @@ def run_workflow(data: list, controls: dict) -> threading.Event:
                     break
                 uid = action["uuid"]
                 tile = controls.get(uid)
-                tile_bgcolor = tile.bgcolor
+                tile_bgcolor = tile.bgcolor if tile else None
                 if tile:
+                    list_view = get_active_list_view()
+                    if list_view:
+                        list_view.scroll_to(key=tile.key, duration=300)
                     tile.bgcolor = ft.Colors.PINK_100
                     tile.update()
 
@@ -35,7 +52,7 @@ def run_workflow(data: list, controls: dict) -> threading.Event:
                         tile.bgcolor = tile_bgcolor
                         tile.update()
                     continue
-                
+
                 t = action["type"]
                 if t == "click":
                     x, y = int(action["x"]), int(action["y"])
@@ -64,8 +81,9 @@ def run_workflow(data: list, controls: dict) -> threading.Event:
                 if tile:
                     tile.bgcolor = tile_bgcolor
                     tile.update()
+
         print("工作流程已停止")
 
-    stop_event = threading.Event()
-    threading.Thread(target=worker, daemon=True, args=(stop_event,)).start()
+    page.run_thread(worker)
     return stop_event
+
