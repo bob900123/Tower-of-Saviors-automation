@@ -1,6 +1,7 @@
 import os
 import time
 import threading
+from datetime import datetime
 
 from .utils import wait, is_image_similar, is_template_in_image
 import pyautogui
@@ -38,6 +39,7 @@ def run_workflow(data: list, controls: dict, page: ft.Page, lv: ft.ListView) -> 
                 if stop_event.is_set():
                     break
                 uid = action["uuid"]
+                t = action["type"]
                 tile = controls.get(uid)
                 tile_bgcolor = tile.bgcolor if tile else None
                 if tile:
@@ -47,13 +49,12 @@ def run_workflow(data: list, controls: dict, page: ft.Page, lv: ft.ListView) -> 
                     tile.bgcolor = ft.Colors.PINK_100
                     tile.update()
 
-                if not parent_condition.get(action["parent"], True):
+                if not parent_condition.get(action["parent"], True) and t not in ["similar", "template"]:
                     if tile:
                         tile.bgcolor = tile_bgcolor
                         tile.update()
                     continue
 
-                t = action["type"]
                 if t == "click":
                     x, y = int(action["x"]), int(action["y"])
                     pyautogui.moveTo(x, y, duration=0.1)
