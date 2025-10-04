@@ -269,7 +269,7 @@ def LoopPage(page: ft.Page):
 
     sleep_bar = ft.SnackBar(
         content=ft.Text(f"{sleep_num} 秒後開始執行"),
-        duration=1000
+        duration=3000
     )
 
     def save_workflow(e: ft.ControlEvent):
@@ -300,14 +300,13 @@ def LoopPage(page: ft.Page):
         e.control.update()
 
         sleep_time = 3
+        page.open(sleep_bar)
 
         for t in range(sleep_time, 0, -1):
             nonlocal sleep_num
             sleep_num = t
             sleep_bar.content.value = f"{sleep_num} 秒後開始執行" 
             sleep_bar.update() 
-            page.update()
-            page.open(sleep_bar)
             page.update()
             time.sleep(1)
         for i in items:
