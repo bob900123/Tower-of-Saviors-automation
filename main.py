@@ -1,10 +1,12 @@
 import threading
+import uuid
 
 import flet as ft
 from flet import ControlEvent
 
 from pages.points import PointsPage, table_data
 from pages.loop import LoopPage
+from pages.file import FilePage
 from utils.local_keyboard import listen_keyboard
 
 def main(page: ft.Page):
@@ -22,7 +24,10 @@ def main(page: ft.Page):
         if e.data == "0":
             page.go("/points")
         elif e.data == "1":
-            page.go("/loop")
+            page.go("/loop?" + str(uuid.uuid4())[:10])
+        elif e.data == "2":
+            page.go("/file?" + str(uuid.uuid4())[:10])
+        
 
     def window_event(e: ft.WindowEvent):
         if e.data == "close":
@@ -51,28 +56,37 @@ def main(page: ft.Page):
                 selected_icon=ft.Icon(ft.Icons.THREESIXTY_OUTLINED),
                 label="迴圈",
             ),
+            ft.NavigationRailDestination(
+                icon=ft.Icon(ft.Icons.ATTACH_FILE),
+                selected_icon=ft.Icon(ft.Icons.ATTACH_FILE_OUTLINED),
+                label="檔案",
+            ),
         ],
         on_change=router,
     )
 
 
     def route_change(e):
-        page.views.clear()  
-        url = page.route.split("?")[0]
-        if url == "/points":
+        page.views.clear()
+
+        route = page.route 
+
+        if route.startswith("/points"):
             r = ft.Row([rail, ft.VerticalDivider(width=1)], expand=True)
             r.controls.append(PointsPage(page))
-            page.views.append(
-                ft.View("/points",[r])
-            )
-        elif url == "/loop":
+            page.views.append(ft.View(route, [r]))
+
+        elif route.startswith("/loop"):
             r = ft.Row([rail, ft.VerticalDivider(width=1)], expand=True)
             r.controls.append(LoopPage(page))
-            page.views.append(
-                ft.View("/loop",[r])
-            )
+            page.views.append(ft.View(route, [r]))
+
+        elif route.startswith("/file"):
+            r = ft.Row([rail, ft.VerticalDivider(width=1)], expand=True)
+            r.controls.append(FilePage(page))
+            page.views.append(ft.View(route, [r]))
+
         else:
-            # 首頁
             page.views.append(
                 ft.View(
                     "/",
@@ -83,7 +97,9 @@ def main(page: ft.Page):
                     ],
                 )
             )
+
         page.update()
+
 
     page.on_route_change = route_change
     page.go("/points")

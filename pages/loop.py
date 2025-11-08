@@ -5,26 +5,13 @@ import time
 
 import flet as ft
 
-from .points import table_data
+from storage.data import items, table_data
+from storage.data import pastel_rainbow, pastel_index, parent_color
 from utils.workflow import run_workflow
 
-items = []
 control_map = {}
 stop_event = None
 start = False
-pastel_rainbow = [
-    ft.Colors.ORANGE_100, 
-    ft.Colors.YELLOW_100, 
-    ft.Colors.GREEN_100, 
-    ft.Colors.BLUE_100, 
-    ft.Colors.CYAN_100, 
-    ft.Colors.PURPLE_100,
-    ft.Colors.CYAN_ACCENT_100,
-    ft.Colors.LIGHT_GREEN_100,
-    ft.Colors.BROWN_100,
-]
-pastel_index = 0
-parent_color = {None: None}
 
 def LoopPage(page: ft.Page):
     selected_control = dict()
@@ -48,31 +35,13 @@ def LoopPage(page: ft.Page):
                     i["file2"] = file_name
                     i["dir2"] = dir_path
 
-    def pick_file_result2(e: ft.ControlEvent):
-        global items, pastel_index
-        if not e.files: return
-        file_name = e.files[0].path
-        if file_name:
-            with open(file_name, "r") as f:
-                workflow = json.load(f)["workflow"]
-                for work in workflow:
-                    if work["type"] in ["similar", "template"]:
-                        parent_color[work["uuid"]] = pastel_rainbow[pastel_index]
-                        pastel_index = (pastel_index + 1) % len(pastel_rainbow)
-                items = workflow
-                refresh()
-
     def pick_file(e: ft.ControlEvent):
         nonlocal selected_control
         uid, index = e.control.data.split(",")
         selected_control = {"uuid": uid, "idx": index, "element": e.control}
         pick_files_dialog.pick_files(allow_multiple=False, initial_directory=".")
 
-    def pick_file2(e: ft.ControlEvent):
-        pick_files_dialog2.pick_files(allow_multiple=False, initial_directory=".")
-
     pick_files_dialog = ft.FilePicker(on_result=pick_file_result)
-    pick_files_dialog2 = ft.FilePicker(on_result=pick_file_result2)
     point_map = dict()
 
     def update_parent(e: ft.ControlEvent):
@@ -258,24 +227,10 @@ def LoopPage(page: ft.Page):
     # 初始構建
     lv = build_lv()
 
-    save_bar = ft.SnackBar(
-        content=ft.Text("儲存成功"),
-        action="ok",
-    )
-    upload_bar = ft.SnackBar(
-        content=ft.Text("上傳成功"),
-        action="od"
-    )
-
     sleep_bar = ft.SnackBar(
         content=ft.Text(f"{sleep_num} 秒後開始執行"),
         duration=3000
     )
-
-    def save_workflow(e: ft.ControlEvent):
-        with open("workflow.json", "w") as f:
-            json.dump({"workflow": items}, f)
-        page.open(save_bar)
     
     def invoke_workflow(e: ft.ControlEvent):
         global stop_event, start
@@ -337,9 +292,6 @@ def LoopPage(page: ft.Page):
                     ft.ElevatedButton("相似", ft.Icons.FIBER_SMART_RECORD_OUTLINED, bgcolor="#92bbc8", on_click=button_clicked, data="similar"),
                     ft.ElevatedButton("匹配", ft.Icons.FIND_IN_PAGE_OUTLINED, bgcolor="#77aabb", on_click=button_clicked, data="template"),
                     ft.Divider(thickness=1),
-                    ft.ElevatedButton("匯入", ft.Icons.FILE_UPLOAD_OUTLINED, bgcolor="#ffffff", on_click=pick_file2),
-                    ft.ElevatedButton("匯出", ft.Icons.SAVE_ALT_OUTLINED, bgcolor="#ffb6ed", on_click=save_workflow),
-                    ft.Divider(thickness=1),
                     ft.ElevatedButton("執行", ft.Icons.PLAY_ARROW_OUTLINED, bgcolor="#cc91bd", on_click=invoke_workflow),
                     ft.Container(
                         content= show_text,
@@ -352,9 +304,6 @@ def LoopPage(page: ft.Page):
                 spacing=20
             ),
             pick_files_dialog,
-            pick_files_dialog2,
-            save_bar,
-            upload_bar,
             sleep_bar,
         ],
         expand=True,
