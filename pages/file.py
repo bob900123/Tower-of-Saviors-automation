@@ -92,15 +92,6 @@ def FilePage(page: ft.Page):
 
     def save_file(e: ft.ControlEvent):
         page.open(dlg_modal)
-        return
-        data = dict()
-        data["points"] = [{"name": name, "x": x, "y": y} for name, x, y in table_data]
-
-        with open("points.json", "w") as f:
-            json.dump(data, f)
-        page.open(save_bar)
-
-
 
     return ft.Column(
         controls=[

@@ -153,12 +153,13 @@ def LoopPage(page: ft.Page):
                             i["value"][1] = e.data
                             break
                     print(items)
+                point0, point1 = item["value"] if item.get("value") else [None, None]
                 first_dropdown = ft.Dropdown(
                     width=120,
                     options=[ft.dropdown.Option(f"{name}") for name, x, y in table_data],
                     text_size=15,
                     border_width=0,
-                    value= item.get("value"),
+                    value= point0 if point0 else None,
                     data= item["uuid"],
                     on_change= change_first_value,
                 )
@@ -167,7 +168,7 @@ def LoopPage(page: ft.Page):
                     options=[ft.dropdown.Option(f"{name}") for name, x, y in table_data],
                     text_size=15,
                     border_width=0,
-                    value= item.get("value"),
+                    value= point1 if point1 else None,
                     data= item["uuid"],
                     on_change= change_second_value,
                 )
