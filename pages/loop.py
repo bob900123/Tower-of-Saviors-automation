@@ -135,6 +135,52 @@ def LoopPage(page: ft.Page):
                     bgcolor=parent_color.get(item.get("parent")),
                     key=item["uuid"]
                 )
+            elif item["type"] == "drag":
+                def change_first_value(e: ft.ControlEvent):
+                    uuid = e.control.data
+                    for i in items:
+                        if i["uuid"] == uuid:
+                            if i.get("value") is None:
+                                i["value"] = [None, None]
+                            i["value"][0] = e.data
+                            break
+                def change_second_value(e: ft.ControlEvent):
+                    uuid = e.control.data
+                    for i in items:
+                        if i["uuid"] == uuid:
+                            if i.get("value") is None:
+                                i["value"] = [None, None]
+                            i["value"][1] = e.data
+                            break
+                    print(items)
+                first_dropdown = ft.Dropdown(
+                    width=120,
+                    options=[ft.dropdown.Option(f"{name}") for name, x, y in table_data],
+                    text_size=15,
+                    border_width=0,
+                    value= item.get("value"),
+                    data= item["uuid"],
+                    on_change= change_first_value,
+                )
+                second_dropdown = ft.Dropdown(
+                    width=120,
+                    options=[ft.dropdown.Option(f"{name}") for name, x, y in table_data],
+                    text_size=15,
+                    border_width=0,
+                    value= item.get("value"),
+                    data= item["uuid"],
+                    on_change= change_second_value,
+                )
+                c = ft.Row([ ft.Text("拖曳"), ft.Column([first_dropdown, second_dropdown])])
+                listtile = ft.ListTile(
+                    title= c, 
+                    leading=ft.Icon(ft.Icons.DONE_OUTLINED),
+                    data=item["uuid"],
+                    on_long_press=remove_item,
+                    on_click=update_parent,
+                    bgcolor=parent_color.get(item.get("parent")),
+                    key=item["uuid"]
+                )
             elif item["type"] == "delay":
                 def change_value(e: ft.ControlEvent):
                     uuid = e.control.data
@@ -269,6 +315,13 @@ def LoopPage(page: ft.Page):
                 x, y = point_map[i["value"]].split(",")
                 i["x"] = x
                 i["y"] = y
+            if i["type"] == "drag":
+                if all(val is not None for val in i["value"]):
+                    x0, y0 = point_map[i["value"][0]].split(",")
+                    x1, y1 = point_map[i["value"][1]].split(",")
+                    i["points"] = [x0, y0, x1, y1]
+                else:
+                    i["poins"] = None
         stop_event = run_workflow(items, control_map, page, lv)
 
     row = ft.Row(
@@ -286,13 +339,14 @@ def LoopPage(page: ft.Page):
             ),
             ft.Column(
                 controls=[ 
-                    ft.ElevatedButton("點擊", ft.Icons.DONE_OUTLINED, bgcolor="#ffffff", on_click=button_clicked, data="click"),
-                    ft.ElevatedButton("雙擊", ft.Icons.DONE_ALL_OUTLINED, bgcolor="#c0d7df", on_click=button_clicked, data="doubleclick"),
-                    ft.ElevatedButton("延遲", ft.Icons.BROWSE_GALLERY_OUTLINED, bgcolor="#aeccd6", on_click=button_clicked, data="delay"),
-                    ft.ElevatedButton("相似", ft.Icons.FIBER_SMART_RECORD_OUTLINED, bgcolor="#92bbc8", on_click=button_clicked, data="similar"),
-                    ft.ElevatedButton("匹配", ft.Icons.FIND_IN_PAGE_OUTLINED, bgcolor="#77aabb", on_click=button_clicked, data="template"),
+                    ft.ElevatedButton("點擊", ft.Icons.DONE_OUTLINED, bgcolor=ft.Colors.BLUE_50, on_click=button_clicked, data="click"),
+                    ft.ElevatedButton("雙擊", ft.Icons.DONE_ALL_OUTLINED, bgcolor=ft.Colors.BLUE_100, on_click=button_clicked, data="doubleclick"),
+                    ft.ElevatedButton("拖曳", ft.Icons.FLIP_TO_FRONT, bgcolor=ft.Colors.BLUE_200, on_click=button_clicked, data="drag"),
+                    ft.ElevatedButton("延遲", ft.Icons.BROWSE_GALLERY_OUTLINED, bgcolor=ft.Colors.BLUE_300, on_click=button_clicked, data="delay"),
+                    ft.ElevatedButton("相似", ft.Icons.FIBER_SMART_RECORD_OUTLINED, bgcolor=ft.Colors.BLUE_400, on_click=button_clicked, data="similar"),
+                    ft.ElevatedButton("匹配", ft.Icons.FIND_IN_PAGE_OUTLINED, bgcolor=ft.Colors.BLUE_500, on_click=button_clicked, data="template"),
                     ft.Divider(thickness=1),
-                    ft.ElevatedButton("執行", ft.Icons.PLAY_ARROW_OUTLINED, bgcolor="#cc91bd", on_click=invoke_workflow),
+                    ft.ElevatedButton("執行", ft.Icons.PLAY_ARROW_OUTLINED, bgcolor=ft.Colors.PINK_50, on_click=invoke_workflow),
                     ft.Container(
                         content= show_text,
                         margin= ft.Margin(top=80, left=0, right=0, bottom=0)

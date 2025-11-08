@@ -1,5 +1,6 @@
 import os
 import time
+import math
 import threading
 from datetime import datetime
 
@@ -63,6 +64,13 @@ def run_workflow(data: list, controls: dict, page: ft.Page, lv: ft.ListView) -> 
                     x, y = int(action["x"]), int(action["y"])
                     pyautogui.moveTo(x, y, duration=0.1)
                     pyautogui.doubleClick()
+                elif t == "drag":
+                    x0, y0, x1, y1 = [int(d) for d in action["points"]]
+                    distance = math.sqrt((x0 - x1) ** 2 + (y0 - y1) ** 2)
+                    total_time = distance / 392
+                    print(f"{ total_time = }")
+                    pyautogui.moveTo(x0, y0, duration=0.3)
+                    pyautogui.dragTo(x1, y1, duration=total_time)
                 elif t == "delay":
                     wait(float(action["value"]), control=controls.get("show_text"), stop_event=stop_event)
                 elif t == "similar":
