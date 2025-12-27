@@ -39,7 +39,7 @@ def is_image_similar(img1: np.ndarray, img2: np.ndarray):
     mse = np.mean((gray1 - gray2) ** 2)
 
     print("MSE Score:", mse)
-    return mse < 15
+    return mse < 18
 
 def is_template_in_image(big_img, small_img, threshold: float = 0.5) -> bool:
     img = cv2.imread(big_img)

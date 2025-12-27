@@ -76,7 +76,7 @@ def run_workflow(data: list, controls: dict, page: ft.Page, lv: ft.ListView) -> 
                 elif t == "similar":
                     if action["file1"] == "current.png":
                         screenshot = pyautogui.screenshot()
-                        screenshot.save(r"D:\Python_Projects\Madhead\static\current.png")
+                        screenshot.save(r"D:\Python Projects\Madhead\static\current.png")
                     img1 = cv2.imread(os.path.join(action["dir1"], action["file1"]))
                     img2 = cv2.imread(os.path.join(action["dir2"], action["file2"]))
                     result = is_image_similar(img1, img2)

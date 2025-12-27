@@ -23,7 +23,7 @@ def PointsPage(page: ft.Page):
                 def make_on_tap(i=i, j=j, txt=txt):
                     def on_tap(e):
                         if j != 0: return
-                        tf = ft.TextField(value=txt.value, autofocus=True, width=100)
+                        tf = ft.TextField(value=txt.value, autofocus=True, expand=True)
                         def save(e2):
                             table_data[i][j] = tf.value
                             rebuild_table()
