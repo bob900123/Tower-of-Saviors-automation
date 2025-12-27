@@ -5,6 +5,7 @@ import threading
 import cv2
 import flet as ft
 import numpy as np
+import requests
 
 def wait(second: float, stop_event: threading.Event = None, control: ft.Control = None, message: str = "等待中"):
     s = int(second)
@@ -53,3 +54,31 @@ def is_template_in_image(big_img, small_img, threshold: float = 0.5) -> bool:
     loc = np.where(result >= threshold)
 
     return bool(loc[0].size)
+
+def notify(app: str):
+    print(app, ":aaaaaaaaaa")
+    if app == "Pushover":
+        notify_pushover()
+    elif app == "LINE":
+        notify_line()
+    elif app == "Telegram":
+        notify_telegram()
+    
+
+def notify_pushover():
+    requests.post(
+        "https://api.pushover.net/1/messages.json",
+        data={
+            "token": "ak24r4ahkfh4qxoptcbmpecigf47jo",
+            "user": "ud8u2g785de54afu9szkhm5kv8dfv4",
+            "title": "神魔之塔 Error",
+            "message": "自動化錯誤",
+            "priority": 1
+        }
+    )
+
+def notify_line():
+    pass
+
+def notify_telegram():
+    pass

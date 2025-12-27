@@ -224,6 +224,22 @@ def LoopPage(page: ft.Page):
                     bgcolor=parent_color.get(item.get("parent")),
                     key=item["uuid"]
                 )
+            elif item["type"] == "not_similar":
+                file_col = ft.Column([
+                        ft.TextButton(item.get("file1") if item.get("file1") else "選擇檔案", on_click=pick_file, data=item["uuid"] + ",0"), 
+                        ft.TextButton(item.get("file2") if item.get("file2") else "選擇檔案", on_click=pick_file, data=item["uuid"] + ",1"), 
+                    ], 
+                    horizontal_alignment=ft.CrossAxisAlignment.CENTER
+                )
+                c = ft.Row([ ft.Text("相異"), file_col], alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.CENTER)
+                listtile = ft.ListTile(
+                    title= c, 
+                    leading=ft.Icon(ft.Icons.SWAP_HORIZ),
+                    data=item["uuid"],
+                    on_long_press=remove_item,
+                    bgcolor=parent_color.get(item.get("parent")),
+                    key=item["uuid"]
+                )
             elif item["type"] == "template":
                 file_col = ft.Column([
                         ft.TextButton(item.get("file1") if item.get("file1") else "選擇模板", on_click=pick_file, data=item["uuid"] + ",0"), 
@@ -237,6 +253,32 @@ def LoopPage(page: ft.Page):
                     leading=ft.Icon(ft.Icons.FIND_IN_PAGE_OUTLINED),
                     data=item["uuid"],
                     on_long_press=remove_item,
+                    bgcolor=parent_color.get(item.get("parent")),
+                    key=item["uuid"]
+                )
+            elif item["type"] == "notify":
+                def change_value(e: ft.ControlEvent):
+                    uuid = e.control.data
+                    for i in items:
+                        if i["uuid"] == uuid:
+                            i["value"] = e.data
+                            break
+                dropdown = ft.Dropdown(
+                    width=120,
+                    options=[ft.dropdown.Option(f"Pushover")],
+                    text_size=15,
+                    border_width=0,
+                    value= item.get("value"),
+                    data= item["uuid"],
+                    on_change= change_value,
+                )
+                c = ft.Row([ ft.Text("通知"), dropdown])
+                listtile = ft.ListTile(
+                    title= c, 
+                    leading=ft.Icon(ft.Icons.NOTIFICATIONS),
+                    data=item["uuid"],
+                    on_long_press=remove_item,
+                    on_click=update_parent,
                     bgcolor=parent_color.get(item.get("parent")),
                     key=item["uuid"]
                 )
@@ -260,7 +302,7 @@ def LoopPage(page: ft.Page):
 
         uuid_str = str(uuid.uuid4())
         parent = None
-        if e.control.data == "similar" or e.control.data == "template":
+        if e.control.data in ["similar", "template", "not_similar"]:
             pastel_index = (pastel_index + 1) % len(pastel_rainbow)
             parent_color[uuid_str] = pastel_rainbow[pastel_index]
             parent = uuid_str
@@ -299,6 +341,7 @@ def LoopPage(page: ft.Page):
         e.control.text = "停止"
         e.control.icon = ft.Icons.STOP_OUTLINED
         e.control.bgcolor = "#ff6f91"   
+        e.control.disabled = True
         e.control.update()
 
         sleep_time = 3
@@ -323,6 +366,8 @@ def LoopPage(page: ft.Page):
                     i["points"] = [x0, y0, x1, y1]
                 else:
                     i["poins"] = None
+        e.control.disabled = False
+        e.control.update()
         stop_event = run_workflow(items, control_map, page, lv)
 
     row = ft.Row(
@@ -340,14 +385,16 @@ def LoopPage(page: ft.Page):
             ),
             ft.Column(
                 controls=[ 
-                    ft.ElevatedButton("點擊", ft.Icons.DONE_OUTLINED, bgcolor=ft.Colors.BLUE_50, on_click=button_clicked, data="click"),
-                    ft.ElevatedButton("雙擊", ft.Icons.DONE_ALL_OUTLINED, bgcolor=ft.Colors.BLUE_100, on_click=button_clicked, data="doubleclick"),
-                    ft.ElevatedButton("拖曳", ft.Icons.FLIP_TO_FRONT, bgcolor=ft.Colors.BLUE_200, on_click=button_clicked, data="drag"),
-                    ft.ElevatedButton("延遲", ft.Icons.BROWSE_GALLERY_OUTLINED, bgcolor=ft.Colors.BLUE_300, on_click=button_clicked, data="delay"),
-                    ft.ElevatedButton("相似", ft.Icons.FIBER_SMART_RECORD_OUTLINED, bgcolor=ft.Colors.BLUE_400, on_click=button_clicked, data="similar"),
-                    ft.ElevatedButton("匹配", ft.Icons.FIND_IN_PAGE_OUTLINED, bgcolor=ft.Colors.BLUE_500, on_click=button_clicked, data="template"),
+                    ft.ElevatedButton("點擊", ft.Icons.DONE_OUTLINED, bgcolor=ft.Colors.DEEP_ORANGE_100, on_click=button_clicked, data="click"),
+                    ft.ElevatedButton("雙擊", ft.Icons.DONE_ALL_OUTLINED, bgcolor=ft.Colors.ORANGE_100, on_click=button_clicked, data="doubleclick"),
+                    ft.ElevatedButton("拖曳", ft.Icons.FLIP_TO_FRONT, bgcolor=ft.Colors.AMBER_100, on_click=button_clicked, data="drag"),
+                    ft.ElevatedButton("延遲", ft.Icons.BROWSE_GALLERY_OUTLINED, bgcolor=ft.Colors.YELLOW_100, on_click=button_clicked, data="delay"),
+                    ft.ElevatedButton("相似", ft.Icons.FIBER_SMART_RECORD_OUTLINED, bgcolor=ft.Colors.LIGHT_GREEN_100, on_click=button_clicked, data="similar"),
+                    ft.ElevatedButton("相異", ft.Icons.SWAP_HORIZ, bgcolor=ft.Colors.GREEN_100, on_click=button_clicked, data="not_similar"),
+                    ft.ElevatedButton("匹配", ft.Icons.FIND_IN_PAGE_OUTLINED, bgcolor=ft.Colors.BLUE_100, on_click=button_clicked, data="template"),
+                    ft.ElevatedButton("通知", ft.Icons.NOTIFICATIONS, bgcolor=ft.Colors.PURPLE_100, on_click=button_clicked, data="notify"),
                     ft.Divider(thickness=1),
-                    ft.ElevatedButton("執行", ft.Icons.PLAY_ARROW_OUTLINED, bgcolor=ft.Colors.PINK_50, on_click=invoke_workflow),
+                    ft.ElevatedButton("執行", ft.Icons.PLAY_ARROW_OUTLINED, bgcolor=ft.Colors.PINK_100, on_click=invoke_workflow),
                     ft.Container(
                         content= show_text,
                         margin= ft.Margin(top=80, left=0, right=0, bottom=0)

@@ -4,7 +4,7 @@ import math
 import threading
 from datetime import datetime
 
-from .utils import wait, is_image_similar, is_template_in_image
+from .utils import wait, is_image_similar, is_template_in_image, notify
 import pyautogui
 import cv2
 import flet as ft
@@ -81,11 +81,22 @@ def run_workflow(data: list, controls: dict, page: ft.Page, lv: ft.ListView) -> 
                     img2 = cv2.imread(os.path.join(action["dir2"], action["file2"]))
                     result = is_image_similar(img1, img2)
                     parent_condition[uid] = result
+                elif t == "not_similar":
+                    if action["file1"] == "current.png":
+                        screenshot = pyautogui.screenshot()
+                        screenshot.save(r"D:\Python Projects\Madhead\static\current.png")
+                    img1 = cv2.imread(os.path.join(action["dir1"], action["file1"]))
+                    img2 = cv2.imread(os.path.join(action["dir2"], action["file2"]))
+                    result = not is_image_similar(img1, img2)
+                    parent_condition[uid] = result
                 elif t == "template":
                     template = cv2.imread(os.path.join(action["dir1"], action["file1"]))
                     img = cv2.imread(os.path.join(action["dir2"], action["file2"]))
                     result = is_template_in_image(img, template)
                     parent_condition[uid] = result
+                elif t == "notify":
+                    app = action["value"]
+                    notify(app)
 
                 if tile:
                     tile.bgcolor = tile_bgcolor

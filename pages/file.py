@@ -39,8 +39,9 @@ def FilePage(page: ft.Page):
             data["points"] = [{"name": name, "x": x, "y": y} for name, x, y in table_data]
             data["workflow"] = items
 
+            file_name = file_name[:-5] if file_name.endswith(".json") else file_name
             with open(f"{file_name}.json", "w") as f:
-                json.dump(data, f)
+                json.dump(data, f, ensure_ascii=False, indent= 4)
 
             page.open(save_bar)
         else:
@@ -73,7 +74,7 @@ def FilePage(page: ft.Page):
 
                 workflow = j["workflow"]
                 for work in workflow:
-                    if work["type"] in ["similar", "template"]:
+                    if work["type"] in ["similar", "template", "not_similar"]:
                         parent_color[work["uuid"]] = pastel_rainbow[pastel_index]
                         pastel_index = (pastel_index + 1) % len(pastel_rainbow)
                 items.clear()
