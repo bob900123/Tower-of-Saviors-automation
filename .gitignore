@@ -11,3 +11,6 @@ wheels/
 
 *.json
 static/
+
+.env
+*.env

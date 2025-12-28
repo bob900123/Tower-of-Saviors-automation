@@ -1,7 +1,7 @@
 import flet as ft
 import json
 
-from storage.data import items, table_data
+from storage.data import items, table_data, parent_actions
 from storage.data import pastel_index, parent_color, pastel_rainbow
 
 file_name = None
@@ -74,7 +74,7 @@ def FilePage(page: ft.Page):
 
                 workflow = j["workflow"]
                 for work in workflow:
-                    if work["type"] in ["similar", "template", "not_similar"]:
+                    if work["type"] in parent_actions:
                         parent_color[work["uuid"]] = pastel_rainbow[pastel_index]
                         pastel_index = (pastel_index + 1) % len(pastel_rainbow)
                 items.clear()

@@ -16,3 +16,5 @@ pastel_rainbow = [
 ]
 pastel_index = 0
 parent_color = {None: None}
+
+parent_actions = ["similar", "not_similar", "template"]

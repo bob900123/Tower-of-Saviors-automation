@@ -1,6 +1,7 @@
 import sys 
 import time
 import threading
+import os
 
 import cv2
 import flet as ft
@@ -14,13 +15,13 @@ def wait(second: float, stop_event: threading.Event = None, control: ft.Control 
     for i in range(s):
         if stop_event is not None and stop_event.is_set():
             if message is not None:
-                print("\r等待中... 已停止" + " " * 10)
+                print("\n\033[32m等待中... \033[0m" + "已停止")
             if control is not None:
                 control.value = f""
                 control.update()
             return
         if message is not None:
-            print(f"\r{message}... {i+1}/{second}" + " " * 10, end="")
+            print(f"\r\033[32m{message}... \033[0m" + f"{i+1:.1f}/{second:.1f}" + "\t" * 3, end="")
         if control is not None:
             control.value = f"等待中...\n{round(float(i+1), 2)}/{round(float(second), 2)}"
             control.update()
@@ -28,19 +29,31 @@ def wait(second: float, stop_event: threading.Event = None, control: ft.Control 
 
     if ms > 1E-8:
         if message is not None:
-            print(f"\r{message}... {second}/{second}" + " " * 10, end="")
+            print(f"\r\033[32m{message}... \033[0m" + f"{second:.1f}/{second:.1f}" + "\t" * 3, end="")
         if control is not None:
             control.value = f"等待中...\n{round(float(second), 2)}/{round(float(second), 2)}"
             control.update()
         time.sleep(ms)
 
-def is_image_similar(img1: np.ndarray, img2: np.ndarray):
+def mse_score(img1: np.ndarray, img2: np.ndarray):
     gray1 = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
     gray2 = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
     mse = np.mean((gray1 - gray2) ** 2)
+    return mse
 
-    print("MSE Score:", mse)
-    return mse < 18
+def is_image_similar(img1: np.ndarray, img2: np.ndarray, show: bool = True):
+    mse = mse_score(img1, img2)
+    result = mse < 18
+    if show:
+        print(f"\r\033[34m[相似]\033[0m" + f" 結果：{result}, mse score：{mse:.3f}")
+    return result
+
+def is_image_not_similar(img1: np.ndarray, img2: np.ndarray, show: bool = True):
+    mse = mse_score(img1, img2)
+    result = mse > 18
+    if show:
+        print(f"\r\033[94m[相異]\033[0m" + f" 結果：{result}, mse score：{mse:.3f}")
+    return result
 
 def is_template_in_image(big_img, small_img, threshold: float = 0.5) -> bool:
     img = cv2.imread(big_img)
@@ -56,7 +69,6 @@ def is_template_in_image(big_img, small_img, threshold: float = 0.5) -> bool:
     return bool(loc[0].size)
 
 def notify(app: str):
-    print(app, ":aaaaaaaaaa")
     if app == "Pushover":
         notify_pushover()
     elif app == "LINE":
@@ -66,16 +78,22 @@ def notify(app: str):
     
 
 def notify_pushover():
-    requests.post(
+    response = requests.post(
         "https://api.pushover.net/1/messages.json",
         data={
-            "token": "ak24r4ahkfh4qxoptcbmpecigf47jo",
-            "user": "ud8u2g785de54afu9szkhm5kv8dfv4",
+            "token": os.getenv("PUSHOVER_TOKEN"),
+            "user": os.getenv("PUSHOVER_USER"),
             "title": "神魔之塔 Error",
             "message": "自動化錯誤",
             "priority": 1
         }
     )
+
+    try:
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        print(f"Pushover HTTP error: {e}")
+        print("回傳內容：", response.text)
 
 def notify_line():
     pass

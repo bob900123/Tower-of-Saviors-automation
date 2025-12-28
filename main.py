@@ -1,5 +1,6 @@
 import threading
 import uuid
+import dotenv
 
 import flet as ft
 from flet import ControlEvent
@@ -8,6 +9,8 @@ from pages.points import PointsPage, table_data
 from pages.loop import LoopPage
 from pages.file import FilePage
 from utils.local_keyboard import listen_keyboard
+
+dotenv.load_dotenv() 
 
 def main(page: ft.Page):
     page.horizontal_alignment = ft.CrossAxisAlignment.CENTER

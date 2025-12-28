@@ -4,7 +4,8 @@ import math
 import threading
 from datetime import datetime
 
-from .utils import wait, is_image_similar, is_template_in_image, notify
+from .utils import wait, is_image_similar, is_template_in_image, notify, is_image_not_similar
+from storage.data import parent_actions
 import pyautogui
 import cv2
 import flet as ft
@@ -50,7 +51,7 @@ def run_workflow(data: list, controls: dict, page: ft.Page, lv: ft.ListView) -> 
                     tile.bgcolor = ft.Colors.PINK_100
                     tile.update()
 
-                if not parent_condition.get(action["parent"], True) and t not in ["similar", "template"]:
+                if not parent_condition.get(action["parent"], True) and t not in parent_actions:
                     if tile:
                         tile.bgcolor = tile_bgcolor
                         tile.update()
@@ -87,7 +88,7 @@ def run_workflow(data: list, controls: dict, page: ft.Page, lv: ft.ListView) -> 
                         screenshot.save(r"D:\Python Projects\Madhead\static\current.png")
                     img1 = cv2.imread(os.path.join(action["dir1"], action["file1"]))
                     img2 = cv2.imread(os.path.join(action["dir2"], action["file2"]))
-                    result = not is_image_similar(img1, img2)
+                    result = is_image_not_similar(img1, img2)
                     parent_condition[uid] = result
                 elif t == "template":
                     template = cv2.imread(os.path.join(action["dir1"], action["file1"]))
@@ -102,7 +103,7 @@ def run_workflow(data: list, controls: dict, page: ft.Page, lv: ft.ListView) -> 
                     tile.bgcolor = tile_bgcolor
                     tile.update()
 
-        print("工作流程已停止")
+        print("\033[31m自動化流程已停止\033[0m")
 
     page.run_thread(worker)
     return stop_event

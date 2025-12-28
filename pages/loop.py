@@ -5,7 +5,7 @@ import time
 
 import flet as ft
 
-from storage.data import items, table_data
+from storage.data import items, table_data, parent_actions
 from storage.data import pastel_rainbow, pastel_index, parent_color
 from utils.workflow import run_workflow
 
@@ -302,7 +302,7 @@ def LoopPage(page: ft.Page):
 
         uuid_str = str(uuid.uuid4())
         parent = None
-        if e.control.data in ["similar", "template", "not_similar"]:
+        if e.control.data in parent_actions:
             pastel_index = (pastel_index + 1) % len(pastel_rainbow)
             parent_color[uuid_str] = pastel_rainbow[pastel_index]
             parent = uuid_str
