@@ -1,24 +1,31 @@
 import os
-import time
 import math
 import threading
-from datetime import datetime
 
-from .utils import wait, is_image_similar, is_template_in_image, notify, is_image_not_similar
+from .utils import (
+    wait,
+    is_image_similar,
+    is_template_in_image,
+    notify,
+    is_image_not_similar,
+)
 from storage.data import parent_actions
 import pyautogui
 import cv2
 import flet as ft
 
-'''
+"""
 points = {
     "point1": "1142,330",
     "point2": "12,20",
     ...
 }
-'''
+"""
 
-def run_workflow(data: list, controls: dict, page: ft.Page, lv: ft.ListView) -> threading.Event:
+
+def run_workflow(
+    data: list, controls: dict, page: ft.Page, lv: ft.ListView
+) -> threading.Event:
     stop_event = threading.Event()
     current_lv = lv
 
@@ -51,7 +58,10 @@ def run_workflow(data: list, controls: dict, page: ft.Page, lv: ft.ListView) -> 
                     tile.bgcolor = ft.Colors.PINK_100
                     tile.update()
 
-                if not parent_condition.get(action["parent"], True) and t not in parent_actions:
+                if (
+                    not parent_condition.get(action["parent"], True)
+                    and t not in parent_actions
+                ):
                     if tile:
                         tile.bgcolor = tile_bgcolor
                         tile.update()
@@ -73,11 +83,22 @@ def run_workflow(data: list, controls: dict, page: ft.Page, lv: ft.ListView) -> 
                     pyautogui.moveTo(x0, y0, duration=0.3)
                     pyautogui.dragTo(x1, y1, duration=total_time)
                 elif t == "delay":
-                    wait(float(action["value"]), control=controls.get("show_text"), stop_event=stop_event)
+                    wait(
+                        float(action["value"]),
+                        control=controls.get("show_text"),
+                        stop_event=stop_event,
+                    )
                 elif t == "similar":
                     if action["file1"] == "current.png":
                         screenshot = pyautogui.screenshot()
-                        screenshot.save(r"D:\Python Projects\Madhead\static\current.png")
+                        screenshot.save(
+                            r"D:\Python Projects\Madhead\static\current.png"
+                        )
+                    if action["file2"] == "current.png":
+                        screenshot = pyautogui.screenshot()
+                        screenshot.save(
+                            r"D:\Python Projects\Madhead\static\current.png"
+                        )
                     img1 = cv2.imread(os.path.join(action["dir1"], action["file1"]))
                     img2 = cv2.imread(os.path.join(action["dir2"], action["file2"]))
                     result = is_image_similar(img1, img2)
@@ -85,7 +106,14 @@ def run_workflow(data: list, controls: dict, page: ft.Page, lv: ft.ListView) -> 
                 elif t == "not_similar":
                     if action["file1"] == "current.png":
                         screenshot = pyautogui.screenshot()
-                        screenshot.save(r"D:\Python Projects\Madhead\static\current.png")
+                        screenshot.save(
+                            r"D:\Python Projects\Madhead\static\current.png"
+                        )
+                    if action["file2"] == "current.png":
+                        screenshot = pyautogui.screenshot()
+                        screenshot.save(
+                            r"D:\Python Projects\Madhead\static\current.png"
+                        )
                     img1 = cv2.imread(os.path.join(action["dir1"], action["file1"]))
                     img2 = cv2.imread(os.path.join(action["dir2"], action["file2"]))
                     result = is_image_not_similar(img1, img2)
@@ -107,4 +135,3 @@ def run_workflow(data: list, controls: dict, page: ft.Page, lv: ft.ListView) -> 
 
     page.run_thread(worker)
     return stop_event
-
