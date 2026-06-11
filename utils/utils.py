@@ -1,4 +1,3 @@
-import sys 
 import time
 import threading
 import os
@@ -8,7 +7,26 @@ import flet as ft
 import numpy as np
 import requests
 
-def wait(second: float, stop_event: threading.Event = None, control: ft.Control = None, message: str = "等待中"):
+from linebot.v3.messaging import (
+    Configuration,
+    ApiClient,
+    MessagingApi,
+    TextMessage,
+    PushMessageRequest,
+)
+
+LINE_USER_ID = os.getenv("LINE_USER_ID")
+LINE_CHANNEL_ACCESS_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN")
+
+configuration = Configuration(access_token=LINE_CHANNEL_ACCESS_TOKEN)
+
+
+def wait(
+    second: float,
+    stop_event: threading.Event = None,
+    control: ft.Control = None,
+    message: str = "等待中",
+):
     s = int(second)
     ms = second - s
 
@@ -17,23 +35,38 @@ def wait(second: float, stop_event: threading.Event = None, control: ft.Control 
             if message is not None:
                 print("\n\033[32m等待中... \033[0m" + "已停止")
             if control is not None:
-                control.value = f""
+                control.value = ""
                 control.update()
             return
         if message is not None:
-            print(f"\r\033[32m{message}... \033[0m" + f"{i+1:.1f}/{second:.1f}" + "\t" * 3, end="")
+            print(
+                f"\r\033[32m{message}... \033[0m"
+                + f"{i + 1:.1f}/{second:.1f}"
+                + "\t" * 3,
+                end="",
+            )
         if control is not None:
-            control.value = f"等待中...\n{round(float(i+1), 2)}/{round(float(second), 2)}"
+            control.value = (
+                f"等待中...\n{round(float(i + 1), 2)}/{round(float(second), 2)}"
+            )
             control.update()
         time.sleep(1)
 
-    if ms > 1E-8:
+    if ms > 1e-8:
         if message is not None:
-            print(f"\r\033[32m{message}... \033[0m" + f"{second:.1f}/{second:.1f}" + "\t" * 3, end="")
+            print(
+                f"\r\033[32m{message}... \033[0m"
+                + f"{second:.1f}/{second:.1f}"
+                + "\t" * 3,
+                end="",
+            )
         if control is not None:
-            control.value = f"等待中...\n{round(float(second), 2)}/{round(float(second), 2)}"
+            control.value = (
+                f"等待中...\n{round(float(second), 2)}/{round(float(second), 2)}"
+            )
             control.update()
         time.sleep(ms)
+
 
 def mse_score(img1: np.ndarray, img2: np.ndarray):
     gray1 = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
@@ -41,19 +74,22 @@ def mse_score(img1: np.ndarray, img2: np.ndarray):
     mse = np.mean((gray1 - gray2) ** 2)
     return mse
 
+
 def is_image_similar(img1: np.ndarray, img2: np.ndarray, show: bool = True):
     mse = mse_score(img1, img2)
     result = mse < 18
     if show:
-        print(f"\r\033[34m[相似]\033[0m" + f" 結果：{result}, mse score：{mse:.3f}")
+        print("\r\033[34m[相似]\033[0m" + f" 結果：{result}, mse score：{mse:.3f}")
     return result
+
 
 def is_image_not_similar(img1: np.ndarray, img2: np.ndarray, show: bool = True):
     mse = mse_score(img1, img2)
     result = mse > 18
     if show:
-        print(f"\r\033[94m[相異]\033[0m" + f" 結果：{result}, mse score：{mse:.3f}")
+        print("\r\033[94m[相異]\033[0m" + f" 結果：{result}, mse score：{mse:.3f}")
     return result
+
 
 def is_template_in_image(big_img, small_img, threshold: float = 0.5) -> bool:
     img = cv2.imread(big_img)
@@ -68,6 +104,7 @@ def is_template_in_image(big_img, small_img, threshold: float = 0.5) -> bool:
 
     return bool(loc[0].size)
 
+
 def notify(app: str):
     if app == "Pushover":
         notify_pushover()
@@ -75,7 +112,7 @@ def notify(app: str):
         notify_line()
     elif app == "Telegram":
         notify_telegram()
-    
+
 
 def notify_pushover():
     response = requests.post(
@@ -85,8 +122,8 @@ def notify_pushover():
             "user": os.getenv("PUSHOVER_USER"),
             "title": "神魔之塔 Error",
             "message": "自動化錯誤",
-            "priority": 1
-        }
+            "priority": 1,
+        },
     )
 
     try:
@@ -95,8 +132,16 @@ def notify_pushover():
         print(f"Pushover HTTP error: {e}")
         print("回傳內容：", response.text)
 
+
 def notify_line():
-    pass
+    with ApiClient(configuration) as api_client:
+        api = MessagingApi(api_client)
+        api.push_message(
+            PushMessageRequest(
+                to=LINE_USER_ID, messages=[TextMessage(text="自動化錯誤")]
+            )
+        )
+
 
 def notify_telegram():
     pass
